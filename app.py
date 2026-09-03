@@ -203,7 +203,7 @@ if generate:
             st.write(response.text)
             st.success("Study Plan Generated Successfully")
 
-            st.subheader("Generated Study Plan")
+            st.subheader("Generated Study Plan.")
 
             st.markdown(study_plan)
         
