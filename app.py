@@ -200,26 +200,13 @@ if generate:
                 response = model.generate_content(prompt)
 
             study_plan = response.text
-
+            st.write(response.text)
             st.success("Study Plan Generated Successfully")
 
             st.subheader("Generated Study Plan")
 
-            st.markdown(
-                f"""
-<div style="
-background:#f8f9fa;
-padding:20px;
-border-radius:10px;
-border:1px solid #dcdcdc;
-white-space:pre-wrap;
-">
-{study_plan}
-</div>
-""",
-                unsafe_allow_html=True,
-            )
-
+            st.markdown(study_plan)
+        
             pdf = create_pdf(study_plan)
 
             col1, col2 = st.columns(2)
