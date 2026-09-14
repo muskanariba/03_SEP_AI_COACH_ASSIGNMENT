@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Study Coach</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f5f7fb;
+            color: #1f2937;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+            margin: 40px auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 34px;
+            margin-bottom: 8px;
+            color: #111827;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 28px;
+            margin-bottom: 22px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 22px;
+            color: #111827;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            background: white;
+            transition: 0.2s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .techniques {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+
+        .technique {
+            border: 1px solid #d1d5db;
+            border-radius: 9px;
+            padding: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+            background: white;
+        }
+
+        .technique:hover {
+            border-color: #2563eb;
+        }
+
+        .technique.active {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .technique input {
+            display: none;
+        }
+
+        .technique-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .technique-description {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .generate-btn {
+            width: 100%;
+            border: none;
+            background: #2563eb;
+            color: white;
+            padding: 14px;
+            border-radius: 9px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .generate-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .generate-btn:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .message {
+            display: none;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            font-size: 14px;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #dbeafe;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .output {
+            display: none;
+        }
+
+        .study-plan {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            font-size: 15px;
+        }
+
+        .download-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .download-btn {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .download-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .footer {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+            margin-top: 25px;
+            padding-bottom: 30px;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                width: 94%;
+                margin: 25px auto;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+
+            .techniques {
+                grid-template-columns: 1fr;
+            }
+
+            .download-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <h1>AI Study Coach</h1>
+        <p>Personalized Study Plan Generator using Google Gemini</p>
+    </div>
+
+
+    <!-- Student Information -->
+    <div class="card">
+
+        <h2>Student Information</h2>
+
+        <div class="row">
+
+            <div>
+
+                <div class="form-group">
+                    <label for="studentName">Student Name</label>
+
+                    <input
+                        type="text"
+                        id="studentName"
+                        placeholder="Enter student name"
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="subject">Subject</label>
+
+                    <input
+                        type="text"
+                        id="subject"
+                        placeholder="Enter subject"
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="days">Days Before Exam</label>
+
+                    <input
+                        type="number"
+                        id="days"
+                        min="1"
+                        value="5"
+                    >
+                </div>
+
+            </div>
+
+
+            <div>
+
+                <div class="form-group">
+                    <label for="hours">Study Hours Per Day</label>
+
+                    <input
+                        type="number"
+                        id="hours"
+                        min="1"
+                        value="2"
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="skill">Skill Level</label>
+
+                    <select id="skill">
+
+                        <option value="Beginner">
+                            Beginner
+                        </option>
+
+                        <option value="Intermediate">
+                            Intermediate
+                        </option>
+
+                        <option value="Advanced">
+                            Advanced
+                        </option>
+
+                    </select>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="weakTopics">
+                Weak Topics
+            </label>
+
+            <textarea
+                id="weakTopics"
+                placeholder="Example: Loops, Functions, Debugging"
+            ></textarea>
+
+        </div>
+
+    </div>
+
+
+    <!-- Prompting Technique -->
+    <div class="card">
+
+        <h2>Prompting Technique</h2>
+
+        <div class="techniques">
+
+            <label class="technique active">
+
+                <input
+                    type="radio"
+                    name="technique"
+                    value="Zero-Shot"
+                    checked
+                >
+
+                <div class="technique-title">
+                    Zero-Shot
+                </div>
+
+                <div class="technique-description">
+                    No examples
+                </div>
+
+            </label>
+
+
+            <label class="technique">
+
+                <input
+                    type="radio"
+                    name="technique"
+                    value="Few-Shot"
+                >
+
+                <div class="technique-title">
+                    Few-Shot
+                </div>
+
+                <div class="technique-description">
+                    Uses examples
+                </div>
+
+            </label>
+
+
+            <label class="technique">
+
+                <input
+                    type="radio"
+                    name="technique"
+                    value="Structured Reasoning"
+                >
+
+                <div class="technique-title">
+                    Structured Reasoning
+                </div>
+
+                <div class="technique-description">
+                    Step-by-step
+                </div>
+
+            </label>
+
+        </div>
+
+
+        <div
+            id="errorMessage"
+            class="message error"
+        ></div>
+
+        <div
+            id="successMessage"
+            class="message success"
+        >
+            Study Plan Generated Successfully
+        </div>
+
+
+        <button
+            class="generate-btn"
+            id="generateBtn"
+        >
+            Generate Study Plan
+        </button>
+
+
+        <div
+            class="loading"
+            id="loading"
+        >
+
+            <div class="spinner"></div>
+
+            <p>Generating study plan...</p>
+
+        </div>
+
+    </div>
+
+
+    <!-- Output -->
+    <div
+        class="card output"
+        id="outputSection"
+    >
+
+        <h2>Generated Study Plan</h2>
+
+        <div
+            class="study-plan"
+            id="studyPlan"
+        ></div>
+
+
+        <div class="download-buttons">
+
+            <button
+                class="download-btn"
+                id="downloadTxt"
+            >
+                Download TXT
+            </button>
+
+            <button
+                class="download-btn"
+                id="downloadPdf"
+            >
+                Download PDF
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="footer">
+        Developed using HTML, CSS, JavaScript and Google Gemini API
+    </div>
+
+</div>
+
+
+<script>
+
+    // --------------------------------
+    // Technique Selection
+    // --------------------------------
+
+    const techniques =
+        document.querySelectorAll(".technique");
+
+    techniques.forEach(function(technique) {
+
+        technique.addEventListener("click", function() {
+
+            techniques.forEach(function(item) {
+                item.classList.remove("active");
+            });
+
+            technique.classList.add("active");
+
+            const radio =
+                technique.querySelector("input");
+
+            radio.checked = true;
+
+        });
+
+    });
+
+
+    // --------------------------------
+    // Get Selected Technique
+    // --------------------------------
+
+    function getSelectedTechnique() {
+
+        const selected =
+            document.querySelector(
+                'input[name="technique"]:checked'
+            );
+
+        return selected ? selected.value : "Zero-Shot";
+
+    }
+
+
+    // --------------------------------
+    // Generate Button
+    // --------------------------------
+
+    const generateBtn =
+        document.getElementById("generateBtn");
+
+    generateBtn.addEventListener(
+        "click",
+        generateStudyPlan
+    );
+
+
+    function generateStudyPlan() {
+
+        const name =
+            document.getElementById("studentName").value.trim();
+
+        const subject =
+            document.getElementById("subject").value.trim();
+
+        const weakTopics =
+            document.getElementById("weakTopics").value.trim();
+
+        const days =
+            document.getElementById("days").value;
+
+        const hours =
+            document.getElementById("hours").value;
+
+        const skill =
+            document.getElementById("skill").value;
+
+        const technique =
+            getSelectedTechnique();
+
+
+        // --------------------------------
+        // Validation
+        // --------------------------------
+
+        const errorMessage =
+            document.getElementById("errorMessage");
+
+        const successMessage =
+            document.getElementById("successMessage");
+
+        errorMessage.style.display = "none";
+        successMessage.style.display = "none";
+
+
+        if (
+            name === "" ||
+            subject === "" ||
+            weakTopics === ""
+        ) {
+
+            errorMessage.innerText =
+                "Please fill in all required fields.";
+
+            errorMessage.style.display = "block";
+
+            return;
+        }
+
+
+        // --------------------------------
+        // Loading
+        // --------------------------------
+
+        generateBtn.disabled = true;
+
+        document.getElementById("loading")
+            .style.display = "block";
+
+
+        // --------------------------------
+        // Demo Response
+        // --------------------------------
+        //
+        // Later this section will call
+        // your secure Gemini backend.
+        //
+
+        setTimeout(function() {
+
+            let studyPlan = "";
+
+            if (technique === "Zero-Shot") {
+
+                studyPlan =
+`AI Study Coach - Zero-Shot Plan
+
+Student: ${name}
+Subject: ${subject}
+Skill Level: ${skill}
+
+Weak Topics:
+${weakTopics}
+
+Exam Preparation:
+
+Day 1:
+Review the basic concepts related to ${weakTopics}.
+Spend ${hours} hour(s) understanding the fundamentals.
+
+Day 2:
+Practice important questions related to the weak topics.
+Focus on understanding mistakes.
+
+Day 3:
+Solve practical exercises and exam-style questions.
+
+Day 4:
+Review difficult concepts and practice weak areas again.
+
+Day ${days}:
+Final revision and mock test.
+
+Daily Study Time:
+${hours} hour(s)
+
+Recommendation:
+Focus more time on the topics where you make the most mistakes.`;
+
+            }
+
+
+            else if (technique === "Few-Shot") {
+
+                studyPlan =
+`AI Study Coach - Few-Shot Plan
+
+Student: ${name}
+Subject: ${subject}
+
+The plan follows the pattern demonstrated in the examples.
+
+Weak Topics:
+${weakTopics}
+
+Day 1:
+Learn and review the fundamentals.
+
+Day 2:
+Study important concepts and worked examples.
+
+Day 3:
+Practice questions related to ${weakTopics}.
+
+Day 4:
+Review mistakes and strengthen weak areas.
+
+Day ${days}:
+Complete a mock test and perform final revision.
+
+Study Hours:
+${hours} hour(s) per day
+
+Skill Level:
+${skill}
+
+Recommendation:
+Use examples and practice questions to improve understanding.`;
+
+            }
+
+
+            else {
+
+                studyPlan =
+`AI Study Coach - Structured Reasoning Plan
+
+Student: ${name}
+Subject: ${subject}
+Skill Level: ${skill}
+
+1. Identify Weak Topics
+
+The main weak topics are:
+${weakTopics}
+
+2. Prioritize Topics
+
+Start with the topics that are most difficult and most important for the exam.
+
+3. Consider Exam Time
+
+There are ${days} day(s) remaining before the exam.
+
+4. Daily Study Time
+
+The recommended available study time is ${hours} hour(s) per day.
+
+5. Learning Activities
+
+Use concept review, examples, practice questions and revision.
+
+6. Day-by-Day Study Plan
+
+Day 1:
+Understand the fundamentals.
+
+Day 2:
+Study important concepts and examples.
+
+Day 3:
+Practice questions.
+
+Day 4:
+Review mistakes and weak areas.
+
+Day ${days}:
+Final revision and mock test.
+
+7. Recommendation
+
+Maintain consistent daily practice and focus additional time on weak topics.`;
+
+            }
+
+
+            // --------------------------------
+            // Show Output
+            // --------------------------------
+
+            document.getElementById("studyPlan")
+                .innerText = studyPlan;
+
+            document.getElementById("outputSection")
+                .style.display = "block";
+
+            successMessage.style.display = "block";
+
+            document.getElementById("loading")
+                .style.display = "none";
+
+            generateBtn.disabled = false;
+
+
+            // Save for download
+            window.currentStudyPlan = studyPlan;
+
+
+        }, 1200);
+
+    }
+
+
+    // --------------------------------
+    // Download TXT
+    // --------------------------------
+
+    document.getElementById("downloadTxt")
+        .addEventListener("click", function() {
+
+            if (!window.currentStudyPlan) {
+                return;
+            }
+
+            const blob = new Blob(
+                [window.currentStudyPlan],
+                {
+                    type: "text/plain"
+                }
+            );
+
+            const url =
+                URL.createObjectURL(blob);
+
+            const link =
+                document.createElement("a");
+
+            link.href = url;
+
+            link.download =
+                "Study_Plan.txt";
+
+            link.click();
+
+            URL.revokeObjectURL(url);
+
+        });
+
+
+    // --------------------------------
+    // PDF Button
+    // --------------------------------
+
+    document.getElementById("downloadPdf")
+        .addEventListener("click", function() {
+
+            alert(
+                "PDF download will be connected with the backend in the next step."
+            );
+
+        });
+
+</script>
+
+</body>
+</html>
