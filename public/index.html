@@ -533,6 +533,13 @@
 <script>
 
     // --------------------------------
+    // Vercel Backend
+    // --------------------------------
+
+    const API_URL = "https://functions-ashy-phi.vercel.app/generate";
+
+
+    // --------------------------------
     // Technique Selection
     // --------------------------------
 
@@ -571,7 +578,6 @@
             );
 
         return selected ? selected.value : "Zero-Shot";
-
     }
 
 
@@ -588,7 +594,11 @@
     );
 
 
-    function generateStudyPlan() {
+    // --------------------------------
+    // Generate Study Plan
+    // --------------------------------
+
+    async function generateStudyPlan() {
 
         const name =
             document.getElementById("studentName").value.trim();
@@ -613,7 +623,7 @@
 
 
         // --------------------------------
-        // Validation
+        // Messages
         // --------------------------------
 
         const errorMessage =
@@ -622,9 +632,23 @@
         const successMessage =
             document.getElementById("successMessage");
 
+        const loading =
+            document.getElementById("loading");
+
+        const outputSection =
+            document.getElementById("outputSection");
+
+        const studyPlan =
+            document.getElementById("studyPlan");
+
+
         errorMessage.style.display = "none";
         successMessage.style.display = "none";
 
+
+        // --------------------------------
+        // Validation
+        // --------------------------------
 
         if (
             name === "" ||
@@ -646,180 +670,99 @@
         // --------------------------------
 
         generateBtn.disabled = true;
-
-        document.getElementById("loading")
-            .style.display = "block";
-
-
-        // --------------------------------
-        // Demo Response
-        // --------------------------------
-        //
-        // Later this section will call
-        // your secure Gemini backend.
-        //
-
-        setTimeout(function() {
-
-            let studyPlan = "";
-
-            if (technique === "Zero-Shot") {
-
-                studyPlan =
-`AI Study Coach - Zero-Shot Plan
-
-Student: ${name}
-Subject: ${subject}
-Skill Level: ${skill}
-
-Weak Topics:
-${weakTopics}
-
-Exam Preparation:
-
-Day 1:
-Review the basic concepts related to ${weakTopics}.
-Spend ${hours} hour(s) understanding the fundamentals.
-
-Day 2:
-Practice important questions related to the weak topics.
-Focus on understanding mistakes.
-
-Day 3:
-Solve practical exercises and exam-style questions.
-
-Day 4:
-Review difficult concepts and practice weak areas again.
-
-Day ${days}:
-Final revision and mock test.
-
-Daily Study Time:
-${hours} hour(s)
-
-Recommendation:
-Focus more time on the topics where you make the most mistakes.`;
-
-            }
+        loading.style.display = "block";
+        outputSection.style.display = "none";
 
 
-            else if (technique === "Few-Shot") {
+        try {
 
-                studyPlan =
-`AI Study Coach - Few-Shot Plan
+            // --------------------------------
+            // Send Data to Vercel Backend
+            // --------------------------------
 
-Student: ${name}
-Subject: ${subject}
+            const response = await fetch(API_URL, {
 
-The plan follows the pattern demonstrated in the examples.
+                method: "POST",
 
-Weak Topics:
-${weakTopics}
+                headers: {
+                    "Content-Type": "application/json"
+                },
 
-Day 1:
-Learn and review the fundamentals.
+                body: JSON.stringify({
 
-Day 2:
-Study important concepts and worked examples.
+                    name: name,
+                    subject: subject,
+                    weak_topics: weakTopics,
+                    days: days,
+                    hours: hours,
+                    skill: skill,
+                    technique: technique
 
-Day 3:
-Practice questions related to ${weakTopics}.
+                })
 
-Day 4:
-Review mistakes and strengthen weak areas.
-
-Day ${days}:
-Complete a mock test and perform final revision.
-
-Study Hours:
-${hours} hour(s) per day
-
-Skill Level:
-${skill}
-
-Recommendation:
-Use examples and practice questions to improve understanding.`;
-
-            }
+            });
 
 
-            else {
+            // --------------------------------
+            // Read Backend Response
+            // --------------------------------
 
-                studyPlan =
-`AI Study Coach - Structured Reasoning Plan
+            const data = await response.json();
 
-Student: ${name}
-Subject: ${subject}
-Skill Level: ${skill}
 
-1. Identify Weak Topics
+            if (!response.ok || !data.success) {
 
-The main weak topics are:
-${weakTopics}
-
-2. Prioritize Topics
-
-Start with the topics that are most difficult and most important for the exam.
-
-3. Consider Exam Time
-
-There are ${days} day(s) remaining before the exam.
-
-4. Daily Study Time
-
-The recommended available study time is ${hours} hour(s) per day.
-
-5. Learning Activities
-
-Use concept review, examples, practice questions and revision.
-
-6. Day-by-Day Study Plan
-
-Day 1:
-Understand the fundamentals.
-
-Day 2:
-Study important concepts and examples.
-
-Day 3:
-Practice questions.
-
-Day 4:
-Review mistakes and weak areas.
-
-Day ${days}:
-Final revision and mock test.
-
-7. Recommendation
-
-Maintain consistent daily practice and focus additional time on weak topics.`;
+                throw new Error(
+                    data.error ||
+                    "Failed to generate study plan."
+                );
 
             }
 
 
             // --------------------------------
-            // Show Output
+            // Display Gemini Response
             // --------------------------------
 
-            document.getElementById("studyPlan")
-                .innerText = studyPlan;
-
-            document.getElementById("outputSection")
-                .style.display = "block";
-
-            successMessage.style.display = "block";
-
-            document.getElementById("loading")
-                .style.display = "none";
-
-            generateBtn.disabled = false;
+            const generatedPlan =
+                data.study_plan;
 
 
-            // Save for download
-            window.currentStudyPlan = studyPlan;
+            studyPlan.innerText =
+                generatedPlan;
 
 
-        }, 1200);
+            outputSection.style.display =
+                "block";
+
+            successMessage.style.display =
+                "block";
+
+
+            // Save for TXT/PDF
+            window.currentStudyPlan =
+                generatedPlan;
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            errorMessage.innerText =
+                "Unable to generate the study plan. Please check the backend and try again.";
+
+            errorMessage.style.display =
+                "block";
+
+        } finally {
+
+            loading.style.display =
+                "none";
+
+            generateBtn.disabled =
+                false;
+
+        }
 
     }
 
@@ -853,7 +796,11 @@ Maintain consistent daily practice and focus additional time on weak topics.`;
             link.download =
                 "Study_Plan.txt";
 
+            document.body.appendChild(link);
+
             link.click();
+
+            document.body.removeChild(link);
 
             URL.revokeObjectURL(url);
 
@@ -861,15 +808,62 @@ Maintain consistent daily practice and focus additional time on weak topics.`;
 
 
     // --------------------------------
-    // PDF Button
+    // PDF Download
     // --------------------------------
 
     document.getElementById("downloadPdf")
         .addEventListener("click", function() {
 
-            alert(
-                "PDF download will be connected with the backend in the next step."
-            );
+            if (!window.currentStudyPlan) {
+                return;
+            }
+
+            const printWindow =
+                window.open("", "_blank");
+
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>AI Study Coach - Study Plan</title>
+
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            padding: 40px;
+                            line-height: 1.7;
+                            white-space: pre-wrap;
+                        }
+
+                        h1 {
+                            margin-bottom: 20px;
+                        }
+                    </style>
+                </head>
+
+                <body>
+
+                    <h1>AI Study Coach - Study Plan</h1>
+
+                    ${window.currentStudyPlan
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/\n/g, "<br>")
+                    }
+
+                </body>
+                </html>
+            `);
+
+            printWindow.document.close();
+
+            printWindow.focus();
+
+            setTimeout(function() {
+
+                printWindow.print();
+
+            }, 500);
 
         });
 
