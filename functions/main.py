@@ -1,17 +1,19 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import google.generativeai as genai
 import os
 
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from google import genai
+
+
 app = Flask(__name__)
+
 CORS(app)
 
-# Gemini API Key
-genai.configure(
-    api_key=os.getenv("GEMINI_API_KEY")
-)
 
-model = genai.GenerativeModel("gemini-2.5-flash")
+# Gemini client
+client = genai.Client(
+    api_key=os.environ.get("GEMINI_API_KEY")
+)
 
 
 @app.route("/", methods=["GET"])
@@ -20,35 +22,30 @@ def home():
 
 
 @app.route("/generate", methods=["POST"])
-def generate_study_plan():
+def generate():
 
     try:
         data = request.get_json()
 
-        name = data.get("name", "").strip()
-        subject = data.get("subject", "").strip()
-        weak_topics = data.get("weak_topics", "").strip()
+        name = data.get("name", "")
+        subject = data.get("subject", "")
+        weak_topics = data.get("weak_topics", "")
         days = data.get("days", "")
         hours = data.get("hours", "")
         skill = data.get("skill", "")
-        technique = data.get("technique", "")
-
-        if not name or not subject or not weak_topics:
-            return jsonify({
-                "error": "Please fill in all required fields."
-            }), 400
+        technique = data.get("technique", "Zero-Shot")
 
 
-        # -------------------------
-        # ZERO-SHOT
-        # -------------------------
+        # --------------------------------
+        # Zero-Shot Prompt
+        # --------------------------------
 
         if technique == "Zero-Shot":
 
             prompt = f"""
 You are an AI Study Coach.
 
-Analyze the following student information and create a personalized study plan.
+Create a personalized study plan for the following student.
 
 Student Name: {name}
 Subject: {subject}
@@ -58,22 +55,31 @@ Study Hours Per Day: {hours}
 Skill Level: {skill}
 
 Tasks:
-1. Identify weak areas.
-2. Prioritize important topics.
-3. Create a day-by-day study schedule.
-4. Recommend suitable study activities.
+
+1. Identify the student's weak areas.
+2. Prioritize the most important topics.
+3. Create a realistic day-by-day study schedule.
+4. Recommend suitable learning activities.
+5. Include revision and practice.
+6. Make the plan suitable for the student's skill level.
 
 Provide only the final study plan.
+Do not reveal internal reasoning.
 """
 
 
-        # -------------------------
-        # FEW-SHOT
-        # -------------------------
+        # --------------------------------
+        # Few-Shot Prompt
+        # --------------------------------
 
         elif technique == "Few-Shot":
 
             prompt = f"""
+You are an AI Study Coach.
+
+Use the following examples as patterns for creating a personalized
+study plan.
+
 Example 1:
 
 Student:
@@ -81,40 +87,25 @@ SQL exam in 3 days.
 Weak Topic: SQL Joins.
 
 Recommended Plan:
-
-Day 1:
-Study INNER, LEFT, RIGHT and FULL joins.
-
-Day 2:
-Practice SQL Join Queries.
-
-Day 3:
-Mock Test and Revision.
+Day 1: Learn INNER, LEFT, RIGHT and FULL joins.
+Day 2: Practice SQL join queries.
+Day 3: Mock test and revision.
 
 
 Example 2:
 
 Student:
 Python exam in 7 days.
-Weak Topic:
-Object Oriented Programming.
+Weak Topic: Object Oriented Programming.
 
 Recommended Plan:
-
-Day 1-2:
-Classes and Objects.
-
-Day 3-4:
-Inheritance and Polymorphism.
-
-Day 5-6:
-Coding Practice.
-
-Day 7:
-Revision and Mock Test.
+Day 1-2: Classes and Objects.
+Day 3-4: Inheritance and Polymorphism.
+Day 5-6: Coding Practice.
+Day 7: Revision and Mock Test.
 
 
-Now create a similar personalized study plan for:
+Now create a similar personalized plan for:
 
 Student Name: {name}
 Subject: {subject}
@@ -122,21 +113,23 @@ Weak Topics: {weak_topics}
 Days Before Exam: {days}
 Study Hours Per Day: {hours}
 Skill Level: {skill}
+
+Use the examples as a formatting and planning guide.
 
 Provide only the final study plan.
 """
 
 
-        # -------------------------
-        # STRUCTURED REASONING
-        # -------------------------
+        # --------------------------------
+        # Structured Reasoning Prompt
+        # --------------------------------
 
-        elif technique == "Structured Reasoning":
+        else:
 
             prompt = f"""
 You are an AI Study Coach.
 
-Analyze the student's situation using the following structured process.
+Create a structured study plan for this student.
 
 Student Name: {name}
 Subject: {subject}
@@ -145,53 +138,47 @@ Days Before Exam: {days}
 Study Hours Per Day: {hours}
 Skill Level: {skill}
 
-Follow these steps:
+Follow this structured process:
 
 1. Identify the weak topics.
-2. Prioritize the most important topics.
+2. Prioritize the topics.
 3. Consider the number of days remaining.
-4. Consider the available study hours per day.
-5. Recommend suitable learning activities.
-6. Create a day-by-day study plan.
-7. Give a short explanation for each recommendation.
+4. Consider the available study hours.
+5. Select appropriate learning activities.
+6. Create a day-by-day study schedule.
+7. Include revision and practice.
+8. Give a short explanation for the recommendations.
 
-Do not reveal internal reasoning.
-Only provide the final structured study plan.
+Do not reveal hidden chain-of-thought or internal reasoning.
+
+Only provide the final structured answer.
 """
 
 
-        else:
+        # --------------------------------
+        # Gemini Interactions API
+        # --------------------------------
 
-            return jsonify({
-                "error": "Invalid prompting technique."
-            }), 400
+        interaction = client.interactions.create(
+            model="gemini-3.6-flash",
+            input=prompt
+        )
 
 
-        # -------------------------
-        # GEMINI
-        # -------------------------
+        study_plan = interaction.output_text
 
-        response = model.generate_content(prompt)
 
         return jsonify({
             "success": True,
-            "study_plan": response.text
+            "study_plan": study_plan
         })
 
 
     except Exception as e:
 
+        print("ERROR:", str(e))
+
         return jsonify({
             "success": False,
             "error": str(e)
         }), 500
-
-
-if __name__ == "__main__":
-
-    port = int(os.environ.get("PORT", 10000))
-
-    app.run(
-        host="0.0.0.0",
-        port=port
-    )
